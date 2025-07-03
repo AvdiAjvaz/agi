@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,35 +15,35 @@ async function getApplications(userId: string) {
   if (!student) return [];
 
   const applications = await prisma.application.findMany({
-    where: { studentId: student.id },
+    where: { studentProfileId: student.id },
     include: {
       job: {
-        select: {
-          id: true,
-          title: true,
-          company: true,
-          location: true,
-          salary: true,
+        include: {
+          employerProfile: {
+            select: {
+              companyName: true,
+            },
+          },
         },
       },
       internship: {
-        select: {
-          id: true,
-          title: true,
-          company: true,
-          location: true,
-          stipend: true,
+        include: {
+          employerProfile: {
+            select: {
+              companyName: true,
+            },
+          },
         },
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { appliedAt: 'desc' },
   });
 
   return applications;
 }
 
 export default async function ApplicationsPage() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
@@ -50,9 +51,9 @@ export default async function ApplicationsPage() {
 
   const applications = await getApplications(session.user.id);
 
-  const pendingApplications = applications.filter(app => app.status === 'PENDING');
-  const acceptedApplications = applications.filter(app => app.status === 'ACCEPTED');
-  const rejectedApplications = applications.filter(app => app.status === 'REJECTED');
+  const pendingApplications = applications.filter((app: any) => app.status === 'PENDING');
+  const acceptedApplications = applications.filter((app: any) => app.status === 'ACCEPTED');
+  const rejectedApplications = applications.filter((app: any) => app.status === 'REJECTED');
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -109,7 +110,7 @@ export default async function ApplicationsPage() {
                         </Badge>
                       </CardTitle>
                       <CardDescription>
-                        {position.company} • {position.location}
+                        {position.employerProfile?.companyName} • {position.location}
                       </CardDescription>
                     </div>
                     <div className="text-right">
@@ -121,9 +122,9 @@ export default async function ApplicationsPage() {
                       }>
                         {application.status}
                       </Badge>
-                      {(position.salary || position.stipend) && (
+                      {(position.salary || position.compensation) && (
                         <p className="text-sm text-gray-600 mt-1">
-                          €{(position.salary || position.stipend).toLocaleString()}
+                          €{(position.salary || position.compensation)}
                         </p>
                       )}
                     </div>
@@ -138,11 +139,11 @@ export default async function ApplicationsPage() {
                       </p>
                     </div>
                     
-                    {application.additionalInfo && (
+                    {application.notes && (
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Additional Information</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
                         <p className="text-gray-700 text-sm line-clamp-2">
-                          {application.additionalInfo}
+                          {application.notes}
                         </p>
                       </div>
                     )}

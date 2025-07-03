@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -11,8 +12,12 @@ async function getJob(id: string) {
     select: {
       id: true,
       title: true,
-      company: true,
       isActive: true,
+      employerProfile: {
+        select: {
+          companyName: true,
+        },
+      },
     },
   });
 
@@ -30,7 +35,7 @@ async function checkExistingApplication(jobId: string, userId: string) {
   const existingApplication = await prisma.application.findFirst({
     where: {
       jobId,
-      studentId: student.id,
+      studentProfileId: student.id,
     },
   });
 
@@ -38,17 +43,18 @@ async function checkExistingApplication(jobId: string, userId: string) {
 }
 
 interface ApplyPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ApplyPage({ params }: ApplyPageProps) {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
   }
 
-  const job = await getJob(params.id);
+  const { id } = await params;
+  const job = await getJob(id);
   
   if (!job || !job.isActive) {
     notFound();
@@ -90,7 +96,7 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
       <JobApplicationForm
         jobId={job.id}
         jobTitle={job.title}
-        company={job.company}
+        company={job.employerProfile.companyName}
       />
     </div>
   );

@@ -1,27 +1,27 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 
 async function getStudentData(userId: string) {
   const student = await prisma.studentProfile.findUnique({
     where: { userId },
     include: {
-      cv: true,
+      cvs: true,
     },
   });
 
   return student;
 }
 
-async function handleCVSubmission(formData: FormData) {
+async function handleCVUpload(formData: FormData) {
   'use server';
   
-  const session = await auth();
+  const session = await getServerSession(authOptions);
   
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
@@ -35,45 +35,13 @@ async function handleCVSubmission(formData: FormData) {
     redirect('/auth/login');
   }
 
-  const summary = formData.get('summary') as string;
-  const experience = formData.get('experience') as string;
-  const education = formData.get('education') as string;
-  const projects = formData.get('projects') as string;
-  const certifications = formData.get('certifications') as string;
-  const languages = formData.get('languages') as string;
-
-  try {
-    // Update or create CV
-    await prisma.cV.upsert({
-      where: { studentId: student.id },
-      update: {
-        summary,
-        experience,
-        education,
-        projects,
-        certifications,
-        languages,
-      },
-      create: {
-        studentId: student.id,
-        summary,
-        experience,
-        education,
-        projects,
-        certifications,
-        languages,
-      },
-    });
-
-    redirect('/dashboard/student/cv?success=updated');
-  } catch (error) {
-    console.error('Error updating CV:', error);
-    throw error;
-  }
+  // TODO: Implement actual file upload functionality
+  // For now, just redirect back with a message
+  redirect('/dashboard/student/cv?message=upload-functionality-pending');
 }
 
 export default async function EditCVPage() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
@@ -85,7 +53,7 @@ export default async function EditCVPage() {
     redirect('/auth/login');
   }
 
-  const cv = student.cv;
+  const cv = student.cvs?.[0]; // Get the most recent CV
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -97,109 +65,60 @@ export default async function EditCVPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{cv ? 'Edit Your CV' : 'Create Your CV'}</CardTitle>
+          <CardTitle>{cv ? 'Upload New CV' : 'Upload Your CV'}</CardTitle>
           <CardDescription>
-            Fill in the sections below to build your professional CV
+            Upload your CV as a PDF file. This will replace your current CV if you have one.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={handleCVSubmission} className="space-y-8">
-            {/* Professional Summary */}
+          {cv && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Current CV</h4>
+              <p className="text-sm text-gray-600">
+                <strong>File:</strong> {cv.fileName}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Size:</strong> {(cv.fileSize / 1024).toFixed(1)} KB
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Uploaded:</strong> {new Date(cv.uploadedAt).toLocaleDateString()}
+              </p>
+            </div>
+          )}
+
+          <form action={handleCVUpload} className="space-y-6">
             <div>
-              <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-2">
-                Professional Summary *
+              <label htmlFor="cv-file" className="block text-sm font-medium text-gray-700 mb-2">
+                CV File (PDF) *
               </label>
-              <Textarea
-                id="summary"
-                name="summary"
-                rows={4}
+              <Input
+                id="cv-file"
+                name="cv-file"
+                type="file"
+                accept=".pdf"
                 required
-                defaultValue={cv?.summary || ''}
-                placeholder="Write a brief professional summary highlighting your strengths, career objectives, and what makes you unique..."
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
               <p className="text-xs text-gray-500 mt-1">
-                2-3 sentences that summarize your professional background and goals
+                Please upload your CV as a PDF file (max 5MB)
               </p>
             </div>
 
-            {/* Experience */}
-            <div>
-              <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-2">
-                Work Experience
-              </label>
-              <Textarea
-                id="experience"
-                name="experience"
-                rows={6}
-                defaultValue={cv?.experience || ''}
-                placeholder="List your work experience, internships, part-time jobs, etc. Include:&#10;&#10;Job Title | Company Name | Duration&#10;• Key responsibilities and achievements&#10;• Relevant skills developed&#10;&#10;Example:&#10;Frontend Developer Intern | Tech Company | June 2024 - August 2024&#10;• Developed responsive web applications using React and TypeScript&#10;• Collaborated with design team to implement user interfaces&#10;• Participated in code reviews and agile development processes"
-              />
-            </div>
-
-            {/* Education */}
-            <div>
-              <label htmlFor="education" className="block text-sm font-medium text-gray-700 mb-2">
-                Education *
-              </label>
-              <Textarea
-                id="education"
-                name="education"
-                rows={4}
-                required
-                defaultValue={cv?.education || ''}
-                placeholder="List your educational background:&#10;&#10;Degree | University | Year&#10;• Relevant coursework&#10;• GPA (if 3.5+)&#10;• Academic achievements&#10;&#10;Example:&#10;Bachelor of Computer Science | University of Prishtina | 2022-2026&#10;• Relevant coursework: Data Structures, Algorithms, Web Development&#10;• GPA: 3.8/4.0"
-              />
-            </div>
-
-            {/* Projects */}
-            <div>
-              <label htmlFor="projects" className="block text-sm font-medium text-gray-700 mb-2">
-                Projects
-              </label>
-              <Textarea
-                id="projects"
-                name="projects"
-                rows={6}
-                defaultValue={cv?.projects || ''}
-                placeholder="Describe your key projects:&#10;&#10;Project Name | Technologies Used | Duration&#10;• Brief description of the project&#10;• Your role and contributions&#10;• Link to repository or demo (if available)&#10;&#10;Example:&#10;E-commerce Website | React, Node.js, MongoDB | March 2024&#10;• Developed a full-stack e-commerce platform with user authentication&#10;• Implemented shopping cart functionality and payment integration&#10;• GitHub: github.com/username/project"
-              />
-            </div>
-
-            {/* Certifications */}
-            <div>
-              <label htmlFor="certifications" className="block text-sm font-medium text-gray-700 mb-2">
-                Certifications & Achievements
-              </label>
-              <Textarea
-                id="certifications"
-                name="certifications"
-                rows={3}
-                defaultValue={cv?.certifications || ''}
-                placeholder="List relevant certifications, awards, or achievements:&#10;&#10;• AWS Certified Cloud Practitioner | Amazon Web Services | 2024&#10;• Dean's List | University of Prishtina | Fall 2023&#10;• Google Analytics Certified | Google | 2023"
-              />
-            </div>
-
-            {/* Languages */}
-            <div>
-              <label htmlFor="languages" className="block text-sm font-medium text-gray-700 mb-2">
-                Languages
-              </label>
-              <Textarea
-                id="languages"
-                name="languages"
-                rows={3}
-                defaultValue={cv?.languages || ''}
-                placeholder="List languages you speak and your proficiency level:&#10;&#10;• Albanian - Native&#10;• English - Fluent (C1)&#10;• German - Intermediate (B2)&#10;• Serbian - Conversational (B1)"
-              />
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h4 className="font-medium text-yellow-900 mb-2">⚠️ File Upload Feature</h4>
+              <p className="text-sm text-yellow-800">
+                The file upload functionality is currently being implemented. For now, you can prepare your CV file and come back later to upload it.
+              </p>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-medium text-blue-900 mb-2">💡 CV Tips</h4>
               <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Save your CV as a PDF to preserve formatting</li>
                 <li>• Keep it concise - aim for 1-2 pages maximum</li>
-                <li>• Use action verbs (developed, implemented, collaborated, etc.)</li>
-                <li>• Quantify achievements where possible (improved efficiency by 20%)</li>
-                <li>• Tailor your CV for each application by emphasizing relevant skills</li>
+                <li>• Use clear section headers (Education, Experience, Skills, etc.)</li>
+                <li>• Include your contact information at the top</li>
+                <li>• Use a professional, clean design</li>
                 <li>• Proofread carefully for grammar and spelling errors</li>
               </ul>
             </div>
@@ -210,8 +129,8 @@ export default async function EditCVPage() {
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit">
-                {cv ? 'Update CV' : 'Create CV'}
+              <Button type="submit" disabled>
+                Upload CV (Coming Soon)
               </Button>
             </div>
           </form>

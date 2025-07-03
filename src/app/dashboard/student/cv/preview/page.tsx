@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ async function getStudentCVData(userId: string) {
           skill: true,
         },
       },
-      cv: true,
+      cvs: true,
     },
   });
 
@@ -28,7 +29,7 @@ async function getStudentCVData(userId: string) {
 }
 
 export default async function CVPreviewPage() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
@@ -36,11 +37,11 @@ export default async function CVPreviewPage() {
 
   const student = await getStudentCVData(session.user.id);
 
-  if (!student || !student.cv) {
+  if (!student || !student.cvs || student.cvs.length === 0) {
     redirect('/dashboard/student/cv');
   }
 
-  const cv = student.cv;
+  const cv = student.cvs[0]; // Get the most recent CV
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -181,19 +182,19 @@ export default async function CVPreviewPage() {
       </div>
 
       {/* Print Styles */}
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          .print\\:hidden {
+          .print\\\\:hidden {
             display: none !important;
           }
-          .print\\:p-6 {
+          .print\\\\:p-6 {
             padding: 1.5rem !important;
           }
           body {
             print-color-adjust: exact;
           }
         }
-      `}</style>
+      `}} />
     </div>
   );
 }

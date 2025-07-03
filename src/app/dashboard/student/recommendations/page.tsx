@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { calculateMatchingScore } from '@/lib/matching';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,8 +25,8 @@ async function getJobRecommendations(userId: string) {
   const jobs = await prisma.job.findMany({
     where: { isActive: true },
     include: {
-      employer: true,
-      requiredSkills: {
+      employerProfile: true,
+      skills: {
         include: {
           skill: true,
         },
@@ -38,14 +39,23 @@ async function getJobRecommendations(userId: string) {
     },
   });
 
+  type JobWithIncludes = Awaited<ReturnType<typeof prisma.job.findMany>>[0];
+  type StudentSkill = { skillId: string; level: string };
+  type RequiredSkill = { skillId: string; required: boolean };
+  type JobWithScore = JobWithIncludes & {
+    matchingScore: number;
+    skillMatches: number;
+    totalSkills: number;
+  };
+
   // Calculate matching scores
-  const jobsWithScores = jobs.map(job => {
-    const studentSkills = student.skills.map(s => ({
+  const jobsWithScores: JobWithScore[] = jobs.map((job: JobWithIncludes) => {
+    const studentSkills: StudentSkill[] = student.skills.map((s: any) => ({
       skillId: s.skill.id,
       level: s.level,
     }));
 
-    const requiredSkills = job.requiredSkills.map(rs => ({
+    const requiredSkills: RequiredSkill[] = job.skills.map((rs: any) => ({
       skillId: rs.skill.id,
       required: true, // Assuming all job skills are required for now
     }));
@@ -61,11 +71,11 @@ async function getJobRecommendations(userId: string) {
   });
 
   // Sort by matching score descending
-  return jobsWithScores.sort((a, b) => b.matchingScore - a.matchingScore);
+  return jobsWithScores.sort((a: JobWithScore, b: JobWithScore) => b.matchingScore - a.matchingScore);
 }
 
 export default async function JobRecommendationsPage() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
@@ -73,9 +83,11 @@ export default async function JobRecommendationsPage() {
 
   const jobRecommendations = await getJobRecommendations(session.user.id);
 
-  const highMatchJobs = jobRecommendations.filter(job => job.matchingScore >= 70);
-  const mediumMatchJobs = jobRecommendations.filter(job => job.matchingScore >= 40 && job.matchingScore < 70);
-  const lowMatchJobs = jobRecommendations.filter(job => job.matchingScore < 40);
+  type JobRecommendation = Awaited<ReturnType<typeof getJobRecommendations>>[0];
+
+  const highMatchJobs = jobRecommendations.filter((job: JobRecommendation) => job.matchingScore >= 70);
+  const mediumMatchJobs = jobRecommendations.filter((job: JobRecommendation) => job.matchingScore >= 40 && job.matchingScore < 70);
+  const lowMatchJobs = jobRecommendations.filter((job: JobRecommendation) => job.matchingScore < 40);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -197,7 +209,7 @@ function JobCard({ job, matchColor }: { job: any; matchColor: 'green' | 'yellow'
           <div>
             <CardTitle className="text-xl">{job.title}</CardTitle>
             <CardDescription className="text-lg">
-              {job.company} • {job.location}
+              {job.employerProfile.companyName} • {job.location}
             </CardDescription>
           </div>
           <div className="text-right">
@@ -233,18 +245,18 @@ function JobCard({ job, matchColor }: { job: any; matchColor: 'green' | 'yellow'
           </div>
         </div>
 
-        {job.requiredSkills.length > 0 && (
+        {job.skills.length > 0 && (
           <div className="mb-4">
             <h4 className="text-sm font-medium text-gray-900 mb-2">Required Skills:</h4>
             <div className="flex flex-wrap gap-2">
-              {job.requiredSkills.slice(0, 5).map((jobSkill: any) => (
+              {job.skills.slice(0, 5).map((jobSkill: any) => (
                 <Badge key={jobSkill.skill.id} variant="outline">
                   {jobSkill.skill.name}
                 </Badge>
               ))}
-              {job.requiredSkills.length > 5 && (
+              {job.skills.length > 5 && (
                 <Badge variant="outline">
-                  +{job.requiredSkills.length - 5} more
+                  +{job.skills.length - 5} more
                 </Badge>
               )}
             </div>

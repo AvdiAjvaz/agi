@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +22,7 @@ async function getStudentData(userId: string) {
           internship: true
         },
         orderBy: {
-          createdAt: 'desc'
+          appliedAt: 'desc'
         }
       }
     }
@@ -43,7 +44,7 @@ async function getStudentData(userId: string) {
 }
 
 export default async function StudentDashboard() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');

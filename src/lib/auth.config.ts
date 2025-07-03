@@ -3,11 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
 
-// Create and export the NextAuth instance
-const nextAuth = NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
-      name: "credentials", 
+      name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
@@ -70,10 +69,8 @@ const nextAuth = NextAuth({
     strategy: "jwt" as const,
   },
   secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key",
-})
+}
 
-// Export the handlers and auth function
-export const handlers = nextAuth.handlers
-export const auth = nextAuth.auth
-export const signIn = nextAuth.signIn
-export const signOut = nextAuth.signOut
+const handler = NextAuth(authOptions)
+
+export { handler as GET, handler as POST }

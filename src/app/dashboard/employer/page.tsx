@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,20 +45,20 @@ async function getEmployerData(userId: string) {
       OR: [
         {
           job: {
-            employerId: employer?.id
+            employerProfileId: employer?.id
           }
         },
         {
           internship: {
-            employerId: employer?.id
+            employerProfileId: employer?.id
           }
         }
       ]
     }
   });
 
-  const activeJobs = employer?.jobs.filter(job => job.isActive).length || 0;
-  const activeInternships = employer?.internships.filter(internship => internship.isActive).length || 0;
+  const activeJobs = employer?.jobs.filter((job: any) => job.isActive).length || 0;
+  const activeInternships = employer?.internships.filter((internship: any) => internship.isActive).length || 0;
 
   return {
     employer,
@@ -68,7 +69,7 @@ async function getEmployerData(userId: string) {
 }
 
 export default async function EmployerDashboard() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'EMPLOYER') {
     redirect('/auth/login');
@@ -201,7 +202,7 @@ export default async function EmployerDashboard() {
             <CardContent>
               {recentJobs.length > 0 ? (
                 <div className="space-y-4">
-                  {recentJobs.map((job) => (
+                  {recentJobs.map((job: any) => (
                     <div key={job.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <h4 className="font-medium">{job.title}</h4>
@@ -246,7 +247,7 @@ export default async function EmployerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recentInternships.map((internship) => (
+                {recentInternships.map((internship: any) => (
                   <div key={internship.id} className="p-4 border rounded-lg">
                     <h4 className="font-medium">{internship.title}</h4>
                     <p className="text-sm text-gray-600">{internship.location}</p>

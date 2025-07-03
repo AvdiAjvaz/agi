@@ -13,12 +13,13 @@ const registerSchema = z.object({
   phone: z.string().optional(),
   university: z.string().optional(),
   major: z.string().optional(),
-  yearOfStudy: z.number().optional(),
+  year: z.number().optional(),
   // Employer fields
   companyName: z.string().optional(),
+  description: z.string().optional(),
   industry: z.string().optional(),
-  companySize: z.string().optional(),
-  website: z.string().optional(),
+  location: z.string().optional(),
+  size: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
             phone: profileData.phone || '',
             university: profileData.university || '',
             major: profileData.major || '',
-            yearOfStudy: profileData.yearOfStudy || 1,
+            year: profileData.year || 1,
           },
         });
       } else if (role === 'EMPLOYER') {
@@ -78,9 +79,9 @@ export async function POST(request: NextRequest) {
           data: {
             userId: user.id,
             companyName: profileData.companyName || '',
+            description: profileData.description || '',
             industry: profileData.industry || '',
-            companySize: profileData.companySize || '',
-            website: profileData.website || '',
+            location: profileData.location || '',
           },
         });
       }

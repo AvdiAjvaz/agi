@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,16 +14,16 @@ async function getJobs(searchTerm?: string) {
       isActive: true,
       ...(searchTerm && {
         OR: [
-          { title: { contains: searchTerm, mode: 'insensitive' } },
-          { description: { contains: searchTerm, mode: 'insensitive' } },
-          { company: { contains: searchTerm, mode: 'insensitive' } },
-          { location: { contains: searchTerm, mode: 'insensitive' } },
+          { title: { contains: searchTerm } },
+          { description: { contains: searchTerm } },
+          { employerProfile: { companyName: { contains: searchTerm } } },
+          { location: { contains: searchTerm } },
         ],
       }),
     },
     include: {
-      employer: true,
-      requiredSkills: {
+      employerProfile: true,
+      skills: {
         include: {
           skill: true,
         },
@@ -42,17 +43,18 @@ async function getJobs(searchTerm?: string) {
 }
 
 interface JobsPageProps {
-  searchParams: { search?: string };
+  searchParams: Promise<{ search?: string }>;
 }
 
 export default async function JobsPage({ searchParams }: JobsPageProps) {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
   }
 
-  const jobs = await getJobs(searchParams.search);
+  const resolvedSearchParams = await searchParams;
+  const jobs = await getJobs(resolvedSearchParams.search);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -64,7 +66,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           <Input
             name="search"
             placeholder="Search jobs..."
-            defaultValue={searchParams.search}
+            defaultValue={resolvedSearchParams.search}
             className="w-full"
           />
           <Button type="submit" className="mt-2">
@@ -72,9 +74,15 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           </Button>
         </form>
 
-        {searchParams.search && (
+        {resolvedSearchParams.search && (
           <p className="text-gray-600 mt-4">
-            Showing results for "{searchParams.search}" ({jobs.length} jobs found)
+            Showing results for "{resolvedSearchParams.search}" ({jobs.length} jobs found)
+          </p>
+        )}
+
+        {!resolvedSearchParams.search && (
+          <p className="text-gray-600 mt-4">
+            Browse through all available job opportunities or use the search to find specific roles.
           </p>
         )}
       </div>
@@ -84,7 +92,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           <CardContent className="text-center py-12">
             <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
             <p className="text-gray-600">
-              {searchParams.search
+              {resolvedSearchParams.search
                 ? 'Try adjusting your search terms.'
                 : 'No active job postings available at the moment.'}
             </p>
@@ -99,7 +107,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                   <div>
                     <CardTitle className="text-xl">{job.title}</CardTitle>
                     <CardDescription className="text-lg">
-                      {job.company} • {job.location}
+                      {job.employerProfile.companyName} • {job.location}
                     </CardDescription>
                   </div>
                   <div className="text-right">
@@ -119,18 +127,18 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                   {job.description}
                 </p>
                 
-                {job.requiredSkills.length > 0 && (
+                {job.skills.length > 0 && (
                   <div className="mb-4">
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Required Skills:</h4>
                     <div className="flex flex-wrap gap-2">
-                      {job.requiredSkills.slice(0, 5).map((jobSkill: any) => (
+                      {job.skills.slice(0, 5).map((jobSkill: any) => (
                         <Badge key={jobSkill.skill.id} variant="outline">
                           {jobSkill.skill.name}
                         </Badge>
                       ))}
-                      {job.requiredSkills.length > 5 && (
+                      {job.skills.length > 5 && (
                         <Badge variant="outline">
-                          +{job.requiredSkills.length - 5} more
+                          +{job.skills.length - 5} more
                         </Badge>
                       )}
                     </div>

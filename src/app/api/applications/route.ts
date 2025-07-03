@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -14,7 +15,7 @@ const applicationSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     
     if (!session || session.user.role !== 'STUDENT') {
       return NextResponse.json(
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       const existingApplication = await prisma.application.findFirst({
         where: {
           jobId,
-          studentId: student.id,
+          studentProfileId: student.id,
         },
       });
 
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       const existingApplication = await prisma.application.findFirst({
         where: {
           internshipId,
-          studentId: student.id,
+          studentProfileId: student.id,
         },
       });
 
@@ -107,11 +108,11 @@ export async function POST(request: NextRequest) {
     // Create application
     const application = await prisma.application.create({
       data: {
-        studentId: student.id,
+        studentProfileId: student.id,
+        userId: session.user.id,
         jobId: jobId || null,
         internshipId: internshipId || null,
         coverLetter,
-        additionalInfo: additionalInfo || null,
         status: 'PENDING',
       },
     });
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     
     if (!session) {
       return NextResponse.json(
@@ -157,22 +158,30 @@ export async function GET(request: NextRequest) {
       }
 
       const applications = await prisma.application.findMany({
-        where: { studentId: student.id },
+        where: { studentProfileId: student.id },
         include: {
           job: {
             select: {
               id: true,
               title: true,
-              company: true,
               location: true,
+              employerProfile: {
+                select: {
+                  companyName: true,
+                },
+              },
             },
           },
           internship: {
             select: {
               id: true,
               title: true,
-              company: true,
               location: true,
+              employerProfile: {
+                select: {
+                  companyName: true,
+                },
+              },
             },
           },
         },
@@ -198,12 +207,12 @@ export async function GET(request: NextRequest) {
           OR: [
             {
               job: {
-                employerId: employer.id,
+                employerProfileId: employer.id,
               },
             },
             {
               internship: {
-                employerId: employer.id,
+                employerProfileId: employer.id,
               },
             },
           ],

@@ -1,130 +1,160 @@
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Users, Briefcase, TrendingUp, Award } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="px-4 lg:px-6 h-14 flex items-center border-b">
-        <Link className="flex items-center justify-center" href="#">
-          <Briefcase className="h-6 w-6 mr-2" />
-          <span className="font-bold">PPIS</span>
+      <header className="px-4 lg:px-6 h-16 flex items-center bg-white shadow-sm">
+        <Link className="flex items-center justify-center" href="/">
+          <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center mr-2">
+            <span className="text-white font-bold text-lg">P</span>
+          </div>
+          <span className="font-bold text-xl text-gray-900">PPIS</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Link className="text-sm font-medium hover:underline underline-offset-4" href="#features">
+          <Link className="text-sm font-medium hover:text-blue-600 transition-colors" href="#features">
             Features
           </Link>
-          <Link className="text-sm font-medium hover:underline underline-offset-4" href="#about">
+          <Link className="text-sm font-medium hover:text-blue-600 transition-colors" href="#about">
             About
           </Link>
-          <Link className="text-sm font-medium hover:underline underline-offset-4" href="/auth/login">
-            Login
+          <Link href="/auth/login">
+            <Button variant="outline" size="sm">Login</Button>
+          </Link>
+          <Link href="/auth/register">
+            <Button size="sm">Get Started</Button>
           </Link>
         </nav>
       </header>
 
+      {/* Hero Section */}
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
-          <div className="container px-4 md:px-6">
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                  Platformë për Punësim dhe Internship për Studentët
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-gray-900">
+                  Platformë për Punësim dhe Internship
                 </h1>
-                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-                  Connecting talented students with amazing career opportunities. 
-                  Find your perfect job or internship with our intelligent matching system.
+                <p className="mx-auto max-w-[700px] text-gray-600 md:text-xl">
+                  Connect students with employers through intelligent matching, professional CV building, 
+                  and streamlined application management.
                 </p>
               </div>
-              <div className="space-x-4">
-                <Button asChild size="lg">
-                  <Link href="/auth/register?type=student">Join as Student</Link>
-                </Button>
-                <Button variant="outline" size="lg" asChild>
-                  <Link href="/auth/register?type=employer">Post Jobs</Link>
-                </Button>
+              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <Link href="/auth/register?role=student">
+                  <Button size="lg" className="w-full sm:w-auto">
+                    I am a Student
+                  </Button>
+                </Link>
+                <Link href="/auth/register?role=employer">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                    I am an Employer
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
         </section>
 
         {/* Features Section */}
-        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
-          <div className="container px-4 md:px-6">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
-              Platform Features
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="flex flex-col items-center space-y-2 text-center">
-                <Users className="h-8 w-8 mb-2" />
-                <h3 className="text-xl font-bold">Student & Employer Profiles</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Comprehensive profiles for both students and employers
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-2 text-center">
-                <Briefcase className="h-8 w-8 mb-2" />
-                <h3 className="text-xl font-bold">Job & Internship Posting</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Easy posting and management of opportunities
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-2 text-center">
-                <TrendingUp className="h-8 w-8 mb-2" />
-                <h3 className="text-xl font-bold">Intelligent Matching</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  CV-based matching with percentage compatibility
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-2 text-center">
-                <Award className="h-8 w-8 mb-2" />
-                <h3 className="text-xl font-bold">CV Builder</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Uniform CV format for easy comparison
-                </p>
-              </div>
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-white">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl text-gray-900">
+                Key Features
+              </h2>
+              <p className="mx-auto max-w-[600px] text-gray-600 md:text-lg mt-4">
+                Everything you need to find the perfect job or the ideal candidate
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* For Students */}
+              <Card className="border-blue-200">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                    <span className="text-2xl">🎓</span>
+                  </div>
+                  <CardTitle>For Students</CardTitle>
+                  <CardDescription>
+                    Find your dream job or internship with intelligent matching
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-gray-600">• Intelligent job recommendations</p>
+                  <p className="text-sm text-gray-600">• Professional CV builder</p>
+                  <p className="text-sm text-gray-600">• Application tracking</p>
+                  <p className="text-sm text-gray-600">• Skills-based matching</p>
+                </CardContent>
+              </Card>
+
+              {/* For Employers */}
+              <Card className="border-green-200">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                    <span className="text-2xl">💼</span>
+                  </div>
+                  <CardTitle>For Employers</CardTitle>
+                  <CardDescription>
+                    Find qualified candidates with our matching system
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-gray-600">• Easy job posting</p>
+                  <p className="text-sm text-gray-600">• Candidate matching</p>
+                  <p className="text-sm text-gray-600">• Application management</p>
+                  <p className="text-sm text-gray-600">• Company profiles</p>
+                </CardContent>
+              </Card>
+
+              {/* Smart Matching */}
+              <Card className="border-purple-200">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                  <CardTitle>Smart Matching</CardTitle>
+                  <CardDescription>
+                    AI-powered compatibility scoring for better matches
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-gray-600">• Percentage compatibility</p>
+                  <p className="text-sm text-gray-600">• Skills analysis</p>
+                  <p className="text-sm text-gray-600">• Personalized recommendations</p>
+                  <p className="text-sm text-gray-600">• Match quality scoring</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
 
-        {/* About Section */}
-        <section id="about" className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-                  About PPIS
+        {/* CTA Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-blue-600">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-white">
+                  Ready to Get Started?
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400">
-                  PPIS (Platformë për Punësim dhe Internship për Studentët) is a modern platform 
-                  designed to bridge the gap between students and employers. Our intelligent 
-                  matching system ensures the best fit for both parties.
+                <p className="mx-auto max-w-[600px] text-blue-100 md:text-xl">
+                  Join students and employers using PPIS to find success.
                 </p>
-                <ul className="space-y-2">
-                  <li className="flex items-center">
-                    <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                    Smart CV-based matching algorithm
-                  </li>
-                  <li className="flex items-center">
-                    <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                    Comprehensive application management
-                  </li>
-                  <li className="flex items-center">
-                    <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                    Separate portals for students and employers
-                  </li>
-                </ul>
               </div>
-              <div className="flex justify-center">
-                <div className="w-full max-w-md bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg p-8 text-white">
-                  <h3 className="text-2xl font-bold mb-4">Get Started Today</h3>
-                  <p className="mb-6">Join thousands of students and employers already using PPIS</p>
-                  <Button variant="secondary" size="lg" className="w-full" asChild>
-                    <Link href="/auth/register">Sign Up Now</Link>
+              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <Link href="/auth/register">
+                  <Button size="lg" variant="secondary">
+                    Create Account
                   </Button>
-                </div>
+                </Link>
+                <Link href="/auth/login">
+                  <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-blue-600">
+                    Sign In
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -132,16 +162,16 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-white">
+        <p className="text-xs text-gray-500">
           © 2025 PPIS. All rights reserved.
         </p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link className="text-xs hover:underline underline-offset-4" href="#">
+          <Link className="text-xs hover:underline underline-offset-4 text-gray-500" href="#">
             Terms of Service
           </Link>
-          <Link className="text-xs hover:underline underline-offset-4" href="#">
-            Privacy
+          <Link className="text-xs hover:underline underline-offset-4 text-gray-500" href="#">
+            Privacy Policy
           </Link>
         </nav>
       </footer>

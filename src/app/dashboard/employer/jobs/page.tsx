@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,9 +15,9 @@ async function getEmployerJobs(userId: string) {
   if (!employer) return [];
 
   const jobs = await prisma.job.findMany({
-    where: { employerId: employer.id },
+    where: { employerProfileId: employer.id },
     include: {
-      requiredSkills: {
+      skills: {
         include: {
           skill: true,
         },
@@ -36,7 +37,7 @@ async function getEmployerJobs(userId: string) {
 async function toggleJobStatus(jobId: string, isActive: boolean) {
   'use server';
   
-  const session = await auth();
+  const session = await getServerSession(authOptions);
   
   if (!session || session.user.role !== 'EMPLOYER') {
     redirect('/auth/login');
@@ -54,7 +55,7 @@ async function toggleJobStatus(jobId: string, isActive: boolean) {
   const job = await prisma.job.findFirst({
     where: {
       id: jobId,
-      employerId: employer.id,
+      employerProfileId: employer.id,
     },
   });
 
@@ -71,20 +72,23 @@ async function toggleJobStatus(jobId: string, isActive: boolean) {
 }
 
 interface JobsPageProps {
-  searchParams: { success?: string };
+  searchParams: Promise<{ success?: string }>;
 }
 
 export default async function EmployerJobsPage({ searchParams }: JobsPageProps) {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'EMPLOYER') {
     redirect('/auth/login');
   }
 
+  const resolvedSearchParams = await searchParams;
   const jobs = await getEmployerJobs(session.user.id);
 
-  const activeJobs = jobs.filter(job => job.isActive);
-  const inactiveJobs = jobs.filter(job => !job.isActive);
+  type Job = Awaited<ReturnType<typeof getEmployerJobs>>[0];
+
+  const activeJobs = jobs.filter((job: Job) => job.isActive);
+  const inactiveJobs = jobs.filter((job: Job) => !job.isActive);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -100,7 +104,7 @@ export default async function EmployerJobsPage({ searchParams }: JobsPageProps) 
         </Link>
       </div>
 
-      {searchParams.success === 'created' && (
+      {resolvedSearchParams.success === 'created' && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
           <p className="text-green-800">Job posted successfully!</p>
         </div>
@@ -118,7 +122,7 @@ export default async function EmployerJobsPage({ searchParams }: JobsPageProps) 
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <h3 className="font-medium text-orange-800">Total Applications</h3>
           <p className="text-2xl font-bold text-orange-900">
-            {jobs.reduce((sum, job) => sum + job._count.applications, 0)}
+            {jobs.reduce((sum: number, job: Job) => sum + job._count.applications, 0)}
           </p>
         </div>
       </div>
@@ -149,7 +153,7 @@ export default async function EmployerJobsPage({ searchParams }: JobsPageProps) 
                         <div>
                           <CardTitle className="text-xl">{job.title}</CardTitle>
                           <CardDescription>
-                            {job.company} • {job.location} • {job.type}
+                            {job.location} • {job.type}
                           </CardDescription>
                         </div>
                         <div className="text-right">
@@ -167,17 +171,17 @@ export default async function EmployerJobsPage({ searchParams }: JobsPageProps) 
                         {job.description}
                       </p>
                       
-                      {job.requiredSkills.length > 0 && (
+                      {job.skills.length > 0 && (
                         <div className="mb-4">
                           <div className="flex flex-wrap gap-2">
-                            {job.requiredSkills.slice(0, 5).map((jobSkill: any) => (
+                            {job.skills.slice(0, 5).map((jobSkill: any) => (
                               <Badge key={jobSkill.skill.id} variant="outline">
                                 {jobSkill.skill.name}
                               </Badge>
                             ))}
-                            {job.requiredSkills.length > 5 && (
+                            {job.skills.length > 5 && (
                               <Badge variant="outline">
-                                +{job.requiredSkills.length - 5} more
+                                +{job.skills.length - 5} more
                               </Badge>
                             )}
                           </div>
@@ -230,7 +234,7 @@ export default async function EmployerJobsPage({ searchParams }: JobsPageProps) 
                         <div>
                           <CardTitle className="text-xl">{job.title}</CardTitle>
                           <CardDescription>
-                            {job.company} • {job.location} • {job.type}
+                            {job.location} • {job.type}
                           </CardDescription>
                         </div>
                         <div className="text-right">

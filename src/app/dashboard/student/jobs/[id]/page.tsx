@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,15 +11,15 @@ async function getJob(id: string) {
   const job = await prisma.job.findUnique({
     where: { id },
     include: {
-      employer: true,
-      requiredSkills: {
+      employerProfile: true,
+      skills: {
         include: {
           skill: true,
         },
       },
       applications: {
         select: {
-          studentId: true,
+          studentProfileId: true,
         },
       },
       _count: {
@@ -41,24 +42,25 @@ async function getStudentId(userId: string) {
 }
 
 interface JobDetailsPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
   }
 
-  const job = await getJob(params.id);
+  const { id } = await params;
+  const job = await getJob(id);
   
   if (!job) {
     notFound();
   }
 
   const studentId = await getStudentId(session.user.id);
-  const hasApplied = job.applications.some(app => app.studentId === studentId);
+  const hasApplied = job.applications.some((app: any) => app.studentProfileId === studentId);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -74,7 +76,7 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
             <div>
               <CardTitle className="text-3xl">{job.title}</CardTitle>
               <CardDescription className="text-xl mt-2">
-                {job.company} • {job.location}
+                {job.employerProfile.companyName} • {job.location}
               </CardDescription>
             </div>
             <div className="text-right">
@@ -128,11 +130,11 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
               </div>
             )}
 
-            {job.requiredSkills.length > 0 && (
+            {job.skills.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-3">Required Skills</h3>
                 <div className="flex flex-wrap gap-2">
-                  {job.requiredSkills.map((jobSkill: any) => (
+                  {job.skills.map((jobSkill: any) => (
                     <Badge key={jobSkill.skill.id} variant="outline">
                       {jobSkill.skill.name}
                     </Badge>
@@ -146,17 +148,17 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>About {job.company}</CardTitle>
+          <CardTitle>About {job.employerProfile.companyName}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div>
               <h4 className="font-medium text-gray-900">Company</h4>
-              <p className="text-gray-600">{job.employer.companyName}</p>
+              <p className="text-gray-600">{job.employerProfile.companyName}</p>
             </div>
             <div>
               <h4 className="font-medium text-gray-900">Industry</h4>
-              <p className="text-gray-600">{job.employer.industry}</p>
+              <p className="text-gray-600">{job.employerProfile.industry}</p>
             </div>
             <div>
               <h4 className="font-medium text-gray-900">Company Size</h4>
@@ -184,7 +186,7 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div>
             <p className="font-medium">{job.title}</p>
-            <p className="text-sm text-gray-600">{job.company}</p>
+            <p className="text-sm text-gray-600">{job.employerProfile.companyName}</p>
           </div>
           <div>
             {hasApplied ? (

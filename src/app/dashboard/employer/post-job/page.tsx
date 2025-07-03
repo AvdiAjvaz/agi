@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ async function getSkills() {
 async function handleJobSubmission(formData: FormData) {
   'use server';
   
-  const session = await auth();
+  const session = await getServerSession(authOptions);
   
   if (!session || session.user.role !== 'EMPLOYER') {
     redirect('/auth/login');
@@ -36,8 +37,8 @@ async function handleJobSubmission(formData: FormData) {
   const requirements = formData.get('requirements') as string;
   const location = formData.get('location') as string;
   const type = formData.get('type') as string;
+  const level = formData.get('level') as string;
   const salary = formData.get('salary') as string;
-  const company = formData.get('company') as string;
   const selectedSkills = formData.getAll('skills') as string[];
   const deadline = formData.get('deadline') as string;
 
@@ -48,10 +49,10 @@ async function handleJobSubmission(formData: FormData) {
         description,
         requirements,
         location,
-        type,
-        salary: salary ? parseFloat(salary) : null,
-        company,
-        employerId: employer.id,
+        type: type as any, // Cast to enum type
+        level: level as any, // Cast to enum type
+        salary,
+        employerProfileId: employer.id,
         deadline: deadline ? new Date(deadline) : null,
         isActive: true,
       },
@@ -75,7 +76,7 @@ async function handleJobSubmission(formData: FormData) {
 }
 
 export default async function PostJobPage() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'EMPLOYER') {
     redirect('/auth/login');
@@ -115,19 +116,6 @@ export default async function PostJobPage() {
               </div>
 
               <div>
-                <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Name *
-                </label>
-                <Input
-                  id="company"
-                  name="company"
-                  type="text"
-                  required
-                  placeholder="Your company name"
-                />
-              </div>
-
-              <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
                   Location *
                 </label>
@@ -155,7 +143,25 @@ export default async function PostJobPage() {
                   <option value="PART_TIME">Part Time</option>
                   <option value="CONTRACT">Contract</option>
                   <option value="REMOTE">Remote</option>
-                  <option value="HYBRID">Hybrid</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="level" className="block text-sm font-medium text-gray-700 mb-2">
+                  Experience Level *
+                </label>
+                <select
+                  id="level"
+                  name="level"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select experience level</option>
+                  <option value="ENTRY_LEVEL">Entry Level</option>
+                  <option value="JUNIOR">Junior</option>
+                  <option value="MID_LEVEL">Mid Level</option>
+                  <option value="SENIOR">Senior</option>
+                  <option value="EXECUTIVE">Executive</option>
                 </select>
               </div>
 
@@ -216,7 +222,7 @@ export default async function PostJobPage() {
                 Required Skills (Optional)
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
-                {skills.map(skill => (
+                {skills.map((skill: any) => (
                   <label key={skill.id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"

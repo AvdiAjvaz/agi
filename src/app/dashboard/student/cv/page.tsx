@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ async function getStudentCV(userId: string) {
           skill: true,
         },
       },
-      cv: true,
+      cvs: true,
     },
   });
 
@@ -28,7 +29,7 @@ async function getStudentCV(userId: string) {
 }
 
 export default async function CVPage() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'STUDENT') {
     redirect('/auth/login');
@@ -40,7 +41,8 @@ export default async function CVPage() {
     redirect('/auth/login');
   }
 
-  const hasCV = !!student.cv;
+  const hasCV = student.cvs && student.cvs.length > 0;
+  const latestCV = student.cvs?.[0]; // Get the most recent CV
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -82,7 +84,7 @@ export default async function CVPage() {
             <CardHeader>
               <CardTitle>Your CV</CardTitle>
               <CardDescription>
-                Last updated: {new Date(student.cv.updatedAt).toLocaleDateString()}
+                Last updated: {latestCV ? new Date(latestCV.uploadedAt).toLocaleDateString() : 'Never'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -100,11 +102,10 @@ export default async function CVPage() {
                 </div>
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">CV Content</h4>
-                  <div className="space-y-1 text-sm">
-                    <p><strong>Summary:</strong> {student.cv.summary ? '✓' : '✗'}</p>
-                    <p><strong>Experience:</strong> {student.cv.experience ? '✓' : '✗'}</p>
-                    <p><strong>Education:</strong> {student.cv.education ? '✓' : '✗'}</p>
-                    <p><strong>Projects:</strong> {student.cv.projects ? '✓' : '✗'}</p>
+                  <div className="space-y-2">
+                    <p><strong>CV File:</strong> {latestCV ? latestCV.fileName : 'No CV uploaded'}</p>
+                    <p><strong>File Size:</strong> {latestCV ? `${(latestCV.fileSize / 1024).toFixed(2)} KB` : 'N/A'}</p>
+                    <p><strong>Upload Date:</strong> {latestCV ? new Date(latestCV.uploadedAt).toLocaleDateString() : 'N/A'}</p>
                   </div>
                 </div>
               </div>
