@@ -1,0 +1,310 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  studentProfile  StudentProfile?
+  employerProfile EmployerProfile?
+  applications    Application[]
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  firstName   String
+  lastName    String
+  phone       String?
+  birthDate   DateTime?
+  address     String?
+  university  String?
+  major       String?
+  year        Int?
+  gpa         Float?
+  bio         String?
+  linkedinUrl String?
+  githubUrl   String?
+  portfolioUrl String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills       StudentSkill[]
+  experiences  Experience[]
+  educations   Education[]
+  applications Application[]
+  cvs          CV[]
+
+  @@map("student_profiles")
+}
+
+model EmployerProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  companyName String
+  description String?
+  industry    String?
+  size        String?
+  location    String?
+  website     String?
+  contactName String?
+  contactPhone String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs        Job[]
+  internships Internship[]
+
+  @@map("employer_profiles")
+}
+
+model Skill {
+  id       String @id @default(cuid())
+  name     String @unique
+  category String
+
+  // Relations
+  studentSkills StudentSkill[]
+  jobSkills     JobSkill[]
+  internshipSkills InternshipSkill[]
+
+  @@map("skills")
+}
+
+model StudentSkill {
+  id              String @id @default(cuid())
+  studentProfileId String
+  skillId         String
+  level           SkillLevel
+
+  // Relations
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  skill          Skill          @relation(fields: [skillId], references: [id])
+
+  @@unique([studentProfileId, skillId])
+  @@map("student_skills")
+}
+
+model Experience {
+  id               String    @id @default(cuid())
+  studentProfileId String
+  title            String
+  company          String
+  location         String?
+  startDate        DateTime
+  endDate          DateTime?
+  current          Boolean   @default(false)
+  description      String?
+  createdAt        DateTime  @default(now())
+
+  // Relations
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("experiences")
+}
+
+model Education {
+  id               String    @id @default(cuid())
+  studentProfileId String
+  institution      String
+  degree           String
+  field            String?
+  startDate        DateTime
+  endDate          DateTime?
+  current          Boolean   @default(false)
+  gpa              Float?
+  description      String?
+  createdAt        DateTime  @default(now())
+
+  // Relations
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("educations")
+}
+
+model Job {
+  id                String   @id @default(cuid())
+  employerProfileId String
+  title             String
+  description       String
+  requirements      String
+  location          String?
+  salary            String?
+  type              JobType
+  level             ExperienceLevel
+  isActive          Boolean  @default(true)
+  deadline          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  employerProfile EmployerProfile @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+  skills          JobSkill[]
+  applications    Application[]
+  matchingScores  MatchingScore[]
+
+  @@map("jobs")
+}
+
+model Internship {
+  id                String   @id @default(cuid())
+  employerProfileId String
+  title             String
+  description       String
+  requirements      String
+  location          String?
+  compensation      String?
+  duration          String?
+  startDate         DateTime?
+  isActive          Boolean  @default(true)
+  deadline          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  employerProfile EmployerProfile   @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+  skills          InternshipSkill[]
+  applications    Application[]
+  matchingScores  MatchingScore[]
+
+  @@map("internships")
+}
+
+model JobSkill {
+  id       String @id @default(cuid())
+  jobId    String
+  skillId  String
+  required Boolean @default(false)
+
+  // Relations
+  job   Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id])
+
+  @@unique([jobId, skillId])
+  @@map("job_skills")
+}
+
+model InternshipSkill {
+  id           String @id @default(cuid())
+  internshipId String
+  skillId      String
+  required     Boolean @default(false)
+
+  // Relations
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  skill      Skill      @relation(fields: [skillId], references: [id])
+
+  @@unique([internshipId, skillId])
+  @@map("internship_skills")
+}
+
+model Application {
+  id               String            @id @default(cuid())
+  studentProfileId String
+  userId           String
+  jobId            String?
+  internshipId     String?
+  status           ApplicationStatus @default(PENDING)
+  coverLetter      String?
+  notes            String?
+  appliedAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile  @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  job            Job?            @relation(fields: [jobId], references: [id])
+  internship     Internship?     @relation(fields: [internshipId], references: [id])
+
+  @@map("applications")
+}
+
+model CV {
+  id               String   @id @default(cuid())
+  studentProfileId String
+  fileName         String
+  filePath         String
+  fileSize         Int
+  uploadedAt       DateTime @default(now())
+
+  // Relations
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@map("cvs")
+}
+
+model MatchingScore {
+  id               String  @id @default(cuid())
+  studentProfileId String
+  jobId            String?
+  internshipId     String?
+  score            Float   // Percentage score (0-100)
+  skillMatches     Int     @default(0)
+  totalSkills      Int     @default(0)
+  calculatedAt     DateTime @default(now())
+
+  // Relations
+  job        Job?        @relation(fields: [jobId], references: [id])
+  internship Internship? @relation(fields: [internshipId], references: [id])
+
+  @@map("matching_scores")
+}
+
+// Enums
+enum UserRole {
+  STUDENT
+  EMPLOYER
+  ADMIN
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  REMOTE
+}
+
+enum ExperienceLevel {
+  ENTRY_LEVEL
+  JUNIOR
+  MID_LEVEL
+  SENIOR
+  EXECUTIVE
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_COMPLETED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}

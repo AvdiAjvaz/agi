@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "PPIS: Development Server",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "pattern": [
+            {
+              "regexp": ".",
+              "file": 1,
+              "location": 2,
+              "message": 3
+            }
+          ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".*starting the development server.*",
+            "endsPattern": ".*ready.*"
+          }
+        }
+      ]
+    },
+    {
+      "label": "PPIS: Build",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "group": "build",
+      "problemMatcher": ["$eslint-stylish"]
+    },
+    {
+      "label": "PPIS: Database Push",
+      "type": "shell",
+      "command": "npx",
+      "args": ["prisma", "db", "push"],
+      "group": "build"
+    },
+    {
+      "label": "PPIS: Prisma Studio",
+      "type": "shell",
+      "command": "npx",
+      "args": ["prisma", "studio"],
+      "group": "build",
+      "isBackground": true
+    },
+    {
+      "label": "PPIS: Seed Database",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "db:seed"],
+      "group": "build"
+    }
+  ]
+}
